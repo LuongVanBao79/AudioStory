@@ -20,8 +20,8 @@ const setTokenCookie = (res, token) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict", // ← sửa chỗ này
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
 
@@ -143,7 +143,11 @@ const logout = async (req, res) => {
   try {
     // Xoá refreshToken trong DB
     await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
-    res.clearCookie("token");
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+    });
     res.status(200).json({ message: "Đăng xuất thành công" });
   } catch (error) {
     res.status(500).json({ message: "Lỗi server", error: error.message });
