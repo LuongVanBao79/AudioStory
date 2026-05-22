@@ -3,7 +3,7 @@ import axios from "axios";
 // Khởi tạo một thực thể (instance) axios riêng biệt cho dự án
 const axiosInstance = axios.create({
   // URL trỏ thẳng vào server Node.js của bạn
-  baseURL: "http://localhost:3000/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3011/api",
 
   // QUAN TRỌNG NHẤT: Bật cờ này lên để trình duyệt tự động đính kèm Cookie
   // (Access Token / Refresh Token) vào mỗi request gửi đi
