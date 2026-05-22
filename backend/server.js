@@ -44,7 +44,8 @@ app.use(
 );
 
 // ✅ Thêm dòng này để xử lý preflight
-app.options("*", cors());
+
+app.options(/(.*)/, cors());
 app.use(cookieParser());
 app.use(express.json());
 
