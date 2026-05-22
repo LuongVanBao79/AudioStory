@@ -1,0 +1,17 @@
+const mongoose = require("mongoose");
+
+const reviewSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    book: { type: mongoose.Schema.Types.ObjectId, ref: "Book", required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    content: { type: String, required: true },
+    isHidden: { type: Boolean, default: false },
+  },
+  { timestamps: true },
+);
+
+// Mỗi user chỉ review 1 cuốn sách 1 lần — enforce ở DB level
+reviewSchema.index({ user: 1, book: 1 }, { unique: true });
+
+module.exports = mongoose.model("Review", reviewSchema);

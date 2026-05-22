@@ -1,0 +1,49 @@
+# ===== Dependencies =====
+node_modules/
+**/node_modules/
+
+# ===== Environment =====
+.env
+.env.local
+.env.production
+.env.development
+**/.env
+
+# ===== Python (ai_server) =====
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+ai_server/venv/
+ai_server/env/
+ai_server/.venv/
+
+# ===== AI generated files =====
+ai_server/public_audio/
+
+# ===== AI Model files (nếu có, thường rất nặng) =====
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+*.ckpt
+
+# ===== Expo / React Native =====
+mobile/.expo/
+mobile/android/app/build/
+mobile/ios/build/
+*.jks
+*.p12
+*.key
+*.mobileprovision
+
+# ===== Build output =====
+dist/
+build/
+*.log
+logs/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
