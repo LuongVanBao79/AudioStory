@@ -23,16 +23,28 @@ const app = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:8081",
-      "https://audio-story-hx8m.vercel.app",
-    ],
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:8081",
+        "https://audio-story-hx8m.vercel.app",
+      ];
+
+      // ✅ Cho phép mobile app (không có origin) + các domain whitelist
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+// ✅ Thêm dòng này để xử lý preflight
+app.options("*", cors());
 app.use(cookieParser());
 app.use(express.json());
 
