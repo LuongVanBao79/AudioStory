@@ -23,7 +23,11 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:8081"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:8081",
+      "https://audio-story-hx8m.vercel.app/",
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
