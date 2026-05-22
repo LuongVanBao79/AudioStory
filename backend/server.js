@@ -26,7 +26,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:8081",
-      "https://audio-story-hx8m.vercel.app/",
+      "https://audio-story-hx8m.vercel.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
