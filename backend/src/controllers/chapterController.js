@@ -18,7 +18,7 @@ const generateAndUploadAudio = async (
       console.log(`[TTS] Đang tạo audio (giọng: ${voiceType})...`);
 
       const response = await axios.post(
-        "http://127.0.0.1:5000/api/tts",
+        `${process.env.AI_SERVER_URL}/api/tts`,
         { text, voice_type: voiceType, ref_audio: refAudio },
         { timeout: 0 },
       );
