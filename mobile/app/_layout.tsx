@@ -8,39 +8,41 @@ const ONBOARDING_KEY = "@onboarding_done";
 
 export default function RootLayout() {
   const router = useRouter();
-  const segments = useSegments();
   const restoreSession = useAuthStore((s) => s.restoreSession);
   const [isReady, setIsReady] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
+  // Effect 1: Bootstrap — chỉ thu thập dữ liệu, không navigate
   useEffect(() => {
     async function bootstrap() {
-      // Chạy song song: restore session + check onboarding
       const [onboardingDone] = await Promise.all([
         AsyncStorage.getItem(ONBOARDING_KEY),
         restoreSession(),
       ]);
 
       if (onboardingDone) {
-        // Đã từng vào app → vào thẳng tabs
-        router.replace("/(tabs)");
+        setShouldRedirect(true); // đánh dấu cần redirect
       }
-      // Chưa onboard → giữ nguyên ở index.tsx (WelcomeScreen)
 
-      setIsReady(true);
+      setIsReady(true); // Stack mount sau đây
     }
 
     bootstrap();
   }, []);
 
-  // Chặn render cho đến khi bootstrap xong, tránh flash màn hình
+  // Effect 2: Navigate — chỉ chạy SAU KHI Stack đã mount
+  useEffect(() => {
+    if (isReady && shouldRedirect) {
+      router.replace("/(tabs)");
+    }
+  }, [isReady, shouldRedirect]); // ← chờ cả hai điều kiện
+
   if (!isReady) return null;
 
   return (
     <SafeAreaProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        {/* Màn hình chào đón — chỉ hiện 1 lần */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
-
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="book/[id]" options={{ headerShown: false }} />

@@ -1,5 +1,3 @@
-
-
 import axios from "axios";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
@@ -34,7 +32,7 @@ const getBaseUrl = () => {
   // để tránh lỗi CORS do khác localhost:8081 và localhost:3000
   const url = __DEV__
     ? "http://192.168.1.15:3000/api"
-    : "https://api.audiostory.com/api";
+    : "https://audiostory-backend.onrender.com/api";
 
   console.log("🔗 Base URL:", url);
   return url;

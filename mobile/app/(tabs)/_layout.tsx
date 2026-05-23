@@ -1,10 +1,12 @@
 import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../../src/stores/useAuthStore";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   const router = useRouter();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const insets = useSafeAreaInsets(); // ← thêm dòng này
 
   return (
     <Tabs
@@ -15,8 +17,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: "#FFF",
           borderTopColor: "#F0F0F0",
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
         },
       }}
     >
