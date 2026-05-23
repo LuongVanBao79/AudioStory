@@ -9,7 +9,10 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -221,6 +224,7 @@ function FavoriteItem({
 export default function LibraryScreen() {
   const router = useRouter();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const insets = useSafeAreaInsets();
 
   const { history, isLoading: historyLoading, fetchMyHistory } = useUserStore();
   const {
@@ -282,7 +286,7 @@ export default function LibraryScreen() {
   // ── Guest state ──────────────────────────────────────────────
   if (!isLoggedIn) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Tủ sách</Text>
         </View>
@@ -401,7 +405,7 @@ export default function LibraryScreen() {
 
   // ─────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Tủ sách</Text>
@@ -453,7 +457,10 @@ export default function LibraryScreen() {
           data={data}
           keyExtractor={(item: any) => item._id}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{
+            padding: 16,
+            paddingBottom: 60 + insets.bottom + 16,
+          }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={renderEmpty}
           refreshControl={
@@ -506,9 +513,6 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   tabBadgeText: { color: "#FFF", fontSize: 10, fontWeight: "700" },
-
-  // List
-  list: { padding: 16, paddingBottom: 100 },
 
   // Card — GIỮ NGUYÊN như gốc
   card: {

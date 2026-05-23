@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, RefreshControl } from "react-native";
 import {
-  ScrollView,
-  StyleSheet,
-  RefreshControl,
-  View,
-  Text,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 
 import { useBookStore } from "../../src/stores/useBookStore";
@@ -20,8 +17,11 @@ import BookSection from "../../src/components/home/BookSection";
 import LoadingScreen from "../../src/components/common/LoadingScreen";
 import ErrorScreen from "../../src/components/common/ErrorScreen";
 
+const TAB_BAR_HEIGHT = 60;
+
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // ── Stores ──────────────────────────────────────────────────
   const user = useAuthStore((s) => s.user);
@@ -76,21 +76,9 @@ export default function HomeScreen() {
     setSelectedCategory(cat._id === selectedCategory ? undefined : cat._id);
     router.push({
       pathname: "/book-list",
-      params: {
-        title: cat.name,
-        category: cat._id,
-      },
+      params: { title: cat.name, category: cat._id },
     });
   };
-
-  // const handleSeeAllNew = () =>
-  //   router.push({
-  //     pathname: "/book-list",
-  //     params: {
-  //       title: "Mới nhất",
-  //       sort: "newest",
-  //     },
-  //   });
 
   // ── Reset category khi quay lại màn hình ────────────────────
   useFocusEffect(
@@ -102,10 +90,7 @@ export default function HomeScreen() {
   const handleSeeAllTop = () =>
     router.push({
       pathname: "/book-list",
-      params: {
-        title: "Nghe nhiều nhất",
-        sort: "top-listen",
-      },
+      params: { title: "Nghe nhiều nhất", sort: "top-listen" },
     });
 
   // ── Loading / Error ─────────────────────────────────────────
@@ -119,7 +104,9 @@ export default function HomeScreen() {
 
   // ── Render ──────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
+    // ✅ edges={["top"]} → chỉ padding top (status bar)
+    // bottom tự tính qua contentContainerStyle bên dưới
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -129,17 +116,15 @@ export default function HomeScreen() {
             tintColor="#FF6B6B"
           />
         }
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{
+          // ✅ TAB_BAR_HEIGHT: chiều cao tab bar
+          // ✅ insets.bottom: home indicator iPhone
+          // ✅ + 16: khoảng thở thêm
+          paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 16,
+        }}
       >
-        {/* Header chào user */}
-        <HomeHeader
-          userName={user?.name}
-          onNotificationPress={() => {
-            /* Sau này thêm notification */
-          }}
-        />
+        <HomeHeader userName={user?.name} onNotificationPress={() => {}} />
 
-        {/* Thể loại */}
         {categories.length > 0 && (
           <CategoryList
             categories={categories}
@@ -148,23 +133,18 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Sách mới */}
         <BookSection
           title="MỚI CẬP NHẬT"
           books={newBooks}
           onPressBook={handlePressBook}
-          // onSeeAll={handleSeeAllNew}
         />
 
-        {/* Sách nghe nhiều */}
         <BookSection
           title="SÁCH NGHE NHIỀU"
           books={topBooks}
           onPressBook={handlePressBook}
           onSeeAll={handleSeeAllTop}
         />
-
-        <View style={styles.bottomPad} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -175,8 +155,4 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8F9FA",
   },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  bottomPad: { height: 20 },
 });

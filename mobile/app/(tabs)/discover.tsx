@@ -7,7 +7,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -23,6 +26,7 @@ import { FlatList } from "react-native";
 export default function DiscoverScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ category?: string; sort?: string }>();
+  const insets = useSafeAreaInsets();
 
   // ── Stores ──────────────────────────────────────────────────
   const { books, fetchBooks, isLoading } = useBookStore();
@@ -92,7 +96,7 @@ export default function DiscoverScreen() {
 
   // ── Render ──────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header + SearchBar */}
       <View style={styles.header}>
         <Text style={styles.title}>Khám phá</Text>
@@ -130,7 +134,10 @@ export default function DiscoverScreen() {
             renderItem={({ item }) => (
               <SearchResultItem book={item} onPress={handlePressBook} />
             )}
-            contentContainerStyle={styles.resultList}
+            contentContainerStyle={{
+              padding: 16,
+              paddingBottom: 60 + insets.bottom + 16,
+            }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             ListHeaderComponent={

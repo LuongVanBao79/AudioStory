@@ -2,6 +2,7 @@ import React from "react";
 import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { THEMES, ThemeKey } from "../../constants/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Props {
   theme: ThemeKey;
@@ -31,9 +32,15 @@ export default function ReaderBottomBar({
   onNext,
 }: Props) {
   const t = THEMES[theme];
+  const insets = useSafeAreaInsets(); // ✅ lấy safe area
 
   return (
-    <View style={[styles.bar, { backgroundColor: t.background }]}>
+    <View
+      style={[
+        styles.bar,
+        { backgroundColor: t.background, paddingBottom: insets.bottom + 8 },
+      ]}
+    >
       {/* Cài đặt chữ */}
       <TouchableOpacity style={styles.btn} onPress={onOpenSettings}>
         <Ionicons name="text" size={22} color={t.text} />

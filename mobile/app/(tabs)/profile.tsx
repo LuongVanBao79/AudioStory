@@ -9,7 +9,10 @@ import {
   Linking,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../../src/stores/useAuthStore";
@@ -156,6 +159,7 @@ export default function ProfileScreen() {
   const [showEdit, setShowEdit] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -197,7 +201,7 @@ export default function ProfileScreen() {
   // ── Guest ────────────────────────────────────────────────────
   if (!isLoggedIn || !user) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.guestWrap}>
           <View style={styles.guestIconWrap}>
             <Ionicons name="person" size={44} color="#FF6B6B" />
@@ -222,8 +226,11 @@ export default function ProfileScreen() {
 
   // ── Logged in ────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 60 + insets.bottom + 16 }}
+      >
         {/* ── Header ── */}
         <View style={styles.header}>
           <Text style={styles.screenTitle}>Hồ sơ</Text>
@@ -427,7 +434,6 @@ const styles = StyleSheet.create({
     color: "#CCC",
     fontSize: 12,
     marginTop: 28,
-    marginBottom: 48,
   },
 
   // Guest
