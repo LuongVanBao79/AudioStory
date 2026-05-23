@@ -1,7 +1,7 @@
 import axiosInstance from "../lib/axios"; // đường dẫn tới file axios.ts của bạn
 import type { Notification, NotificationResponse } from "../types/notification";
 
-const BASE_URL = "http://localhost:3000/api";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 // ─────────────────────────────────────────────────────────────
 // Kết nối SSE — gọi một lần khi admin đăng nhập
