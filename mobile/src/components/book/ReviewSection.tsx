@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Review } from "../../types";
@@ -72,9 +73,16 @@ export default function ReviewSection({
             {/* Avatar + tên */}
             <View style={styles.userRow}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {review.user.username?.charAt(0)?.toUpperCase() ?? "U"}
-                </Text>
+                {review.user.avatar ? (
+                  <Image
+                    source={{ uri: review.user.avatar }}
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <Text style={styles.avatarText}>
+                    {review.user.username?.charAt(0)?.toUpperCase() ?? "U"}
+                  </Text>
+                )}
               </View>
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>{review.user.username}</Text>
@@ -138,10 +146,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
+    overflow: "hidden",
   },
   avatarText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
   userInfo: { flex: 1, gap: 3 },
   userName: { fontSize: 14, fontWeight: "700", color: "#1A1A2E" },
   date: { fontSize: 11, color: "#BBB" },
   content: { fontSize: 14, color: "#555", lineHeight: 22 },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
 });

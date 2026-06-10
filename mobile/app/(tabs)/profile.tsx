@@ -8,6 +8,7 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import {
   SafeAreaView,
@@ -239,12 +240,19 @@ export default function ProfileScreen() {
         {/* ── Profile card ── */}
         <View style={styles.profileCard}>
           <View style={styles.avatarWrap}>
-            <Text style={styles.avatarText}>{initials}</Text>
+            {/* Kiểm tra xem user có trường avatar hay không */}
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{initials}</Text>
+            )}
           </View>
+
           <View style={styles.profileInfo}>
-            <Text style={styles.username}>{user.name}</Text>
-            <Text style={styles.email}>{user.email}</Text>
+            <Text style={styles.username}>{user?.name}</Text>
+            <Text style={styles.email}>{user?.email}</Text>
           </View>
+
           <TouchableOpacity
             style={styles.editBtn}
             onPress={() => setShowEdit(true)}
@@ -380,15 +388,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  avatarWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: "#FF6B6B",
-    justifyContent: "center",
-    alignItems: "center",
-    flexShrink: 0,
-  },
   avatarText: { fontSize: 20, fontWeight: "800", color: "#FFF" },
   profileInfo: { flex: 1 },
   username: { fontSize: 17, fontWeight: "800", color: "#1A1A2E" },
@@ -469,4 +468,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loginBtnText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
+
+  avatarWrap: {
+    width: 60, // Bạn thay bằng độ rộng thực tế của bạn (ví dụ: 60)
+    height: 60, // Bạn thay bằng độ cao thực tế của bạn (phải bằng width)
+    borderRadius: 30, // BẮT BUỘC: Phải bằng đúng 1/2 kích thước ở trên (60 / 2 = 30)
+
+    backgroundColor: "#FF6B6B", // Đây chính là màu cam/hồng nền cũ của bạn
+    alignItems: "center",
+    justifyContent: "center",
+
+    // CỰC KỲ QUAN TRỌNG: Thuộc tính này sẽ cắt phẳng tất cả các góc vuông
+    // tràn ra ngoài phạm vi hình tròn của thẻ cha, biến mọi thứ bên trong thành hình tròn
+    overflow: "hidden",
+  },
+
+  avatarImage: {
+    width: "100%", // Chiếm trọn 100% chiều rộng của thẻ cha
+    height: "100%", // Chiếm trọn 100% chiều cao của thẻ cha
+    resizeMode: "cover", // Đảm bảo ảnh tự phóng to/thu nhỏ vừa khít không bị méo
+
+    // Không cần dùng borderRadius ở đây nữa vì thẻ cha đã gánh nhiệm vụ cắt tròn rồi
+  },
 });

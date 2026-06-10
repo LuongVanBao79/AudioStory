@@ -14,28 +14,28 @@ import { THEMES, ThemeKey } from "../../constants/theme";
 // Danh sách font hỗ trợ
 // ─────────────────────────────────────────────────────────────
 export type FontFamily =
-  | "Arial"
-  | "Charter"
+  | "Arimo"
+  | "Bitter"
   | "Andada Pro"
-  | "Georgia"
+  | "Lora"
   | "Noto Sans"
   | "Lato"
-  | "Palatino"
-  | "Times New Roman"
-  | "Avenir Next"
+  | "EB Garamond"
+  | "Tinos"
+  | "Nunito"
   | "System";
 
 export const FONT_OPTIONS: { label: string; value: FontFamily }[] = [
-  { label: "Arial", value: "Arial" },
-  { label: "Charter", value: "Charter" },
-  { label: "Andada", value: "Andada Pro" },
-  { label: "Georgia", value: "Georgia" },
-  { label: "Noto Sans", value: "Noto Sans" },
-  { label: "Lato", value: "Lato" },
-  { label: "Palatino", value: "Palatino" },
-  { label: "Times NR", value: "Times New Roman" },
-  { label: "Avenir", value: "Avenir Next" },
-  { label: "Mặc định", value: "System" },
+  { label: "Arial", value: "Arimo" }, // thay Arial
+  { label: "Charter", value: "Bitter" }, // thay Charter
+  { label: "Andada", value: "Andada Pro" }, // giữ nguyên
+  { label: "Georgia", value: "Lora" }, // thay Georgia
+  { label: "Noto Sans", value: "Noto Sans" }, // giữ nguyên
+  { label: "Lato", value: "Lato" }, // giữ nguyên
+  { label: "Palatino", value: "EB Garamond" }, // thay Palatino
+  { label: "Times NR", value: "Tinos" }, // thay Times New Roman
+  { label: "Avenir", value: "Nunito" }, // thay Avenir Next
+  { label: "Mặc định", value: "System" }, // giữ nguyên
 ];
 
 // ─────────────────────────────────────────────────────────────

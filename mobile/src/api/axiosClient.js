@@ -31,7 +31,7 @@ const getBaseUrl = () => {
   // Ưu tiên dùng IP LAN (192.168.1.7) cho cả Web và Mobile khi Dev
   // để tránh lỗi CORS do khác localhost:8081 và localhost:3000
   const url = __DEV__
-    ? "http://192.168.1.15:3000/api"
+    ? "http://192.168.1.8:3000/api"
     : "https://audiostory-backend.onrender.com/api";
 
   console.log("🔗 Base URL:", url);

@@ -13,6 +13,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCommentStore } from "../../stores/useCommentStore";
@@ -209,9 +210,16 @@ function CommentItem({
         delayLongPress={300}
         activeOpacity={0.8}
       >
-        <Text style={styles.avatarText}>
-          {comment.user.username?.charAt(0)?.toUpperCase() ?? "U"}
-        </Text>
+        {comment.user.avatar ? (
+          <Image
+            source={{ uri: comment.user.avatar }}
+            style={styles.avatarImage}
+          />
+        ) : (
+          <Text style={styles.avatarText}>
+            {comment.user.username?.charAt(0)?.toUpperCase() ?? "U"}
+          </Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -220,6 +228,7 @@ function CommentItem({
         delayLongPress={300}
         activeOpacity={1}
       >
+        {/* Nội dung comment của bạn ở đây... */}
         {/* Header */}
         <View style={styles.commentHeader}>
           <Text style={[styles.username, { color: t.text }]}>
@@ -689,6 +698,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
+    overflow: "hidden",
   },
   avatarSmall: { width: 28, height: 28, borderRadius: 8 },
   avatarText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
@@ -793,4 +803,9 @@ const styles = StyleSheet.create({
   },
   emptyText: { fontSize: 16, fontWeight: "600", marginTop: 8 },
   emptyHint: { fontSize: 13, color: "#BBB" },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
 });
