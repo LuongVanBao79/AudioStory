@@ -23,7 +23,7 @@ export const useChapterStore = create<ChapterState>((set, get) => ({
 
   // Lấy danh sách chương của 1 cuốn sách
   fetchChaptersByBook: async (bookId: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, chapters: [] }); // 👈 clear chapters cũ
     try {
       const data = await chapterService.getByBook(bookId);
       set({ chapters: data, isLoading: false });

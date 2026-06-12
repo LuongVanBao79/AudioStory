@@ -10,7 +10,7 @@ import {
   Clock,
 } from "lucide-react";
 import moment from "moment";
-import { useDashboardStore } from "../stores/useDashboardStore";
+import { useDashboardStore } from "../stores/useDashboardStore"; // Đảm bảo đường dẫn đúng
 import {
   BarChart,
   Bar,
@@ -37,13 +37,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const Dashboard = () => {
-  const { data, isLoading, error, range, setRange, fetchDashboardData } =
-    useDashboardStore();
+  const {
+    data,
+    isLoading,
+    error,
+    range,
+    setRange,
+    trendingFilter,
+    setTrendingFilter,
+    fetchDashboardData,
+  } = useDashboardStore();
 
   // Chỉ cần fetch lần đầu
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [fetchDashboardData]);
 
   // Các nút filter
   const RANGE_OPTIONS = [
@@ -52,10 +60,16 @@ const Dashboard = () => {
     { value: "12m", label: "12 tháng" },
   ] as const;
 
-  if (isLoading) {
+  const TRENDING_OPTIONS = [
+    { value: "read", label: "Đọc nhiều" },
+    { value: "listen", label: "Nghe nhiều" },
+    { value: "rating", label: "Đánh giá cao" },
+  ] as const;
+
+  if (isLoading && !data) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-indigo-600 font-medium">
+        <div className="text-indigo-600 font-medium animate-pulse">
           Đang tải dữ liệu hệ thống...
         </div>
       </div>
@@ -105,27 +119,20 @@ const Dashboard = () => {
     },
   ];
 
-  // Tính tổng hoạt động 7 ngày để hiển thị bên cạnh tiêu đề chart
-  const totalWeekActivity =
-    data?.dailyViews?.reduce((sum, d) => sum + d.luotNghe, 0) || 0;
+  // Tính tổng hoạt động động theo range để hiển thị
+  const totalActivity =
+    data?.chartData?.reduce((sum, d) => sum + d.hoatDong, 0) || 0;
+  const rangeLabelText =
+    range === "7d"
+      ? "7 ngày qua"
+      : range === "4w"
+        ? "4 tuần qua"
+        : "12 tháng qua";
 
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Tổng quan Hệ thống
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Chào mừng trở lại! Dưới đây là tình hình nền tảng AudioStory hôm
-            nay.
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-4">
       {/* 4 THẺ CHỈ SỐ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
             key={index}
@@ -148,8 +155,8 @@ const Dashboard = () => {
       </div>
 
       {/* BIỂU ĐỒ & RANKING */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* BIỂU ĐỒ — Recharts thật, data từ API */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* BIỂU ĐỒ — Recharts */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -157,26 +164,25 @@ const Dashboard = () => {
                 Biểu đồ Hoạt động
               </h2>
               <p className="text-sm text-slate-500 mt-0.5">
-                Bình luận & đánh giá trong 7 ngày qua
+                Bình luận & đánh giá trong {rangeLabelText}
               </p>
             </div>
-            {/* Tổng 7 ngày */}
             <div className="text-right">
               <p className="text-2xl font-bold text-indigo-600">
-                {totalWeekActivity}
+                {totalActivity.toLocaleString()}
               </p>
-              <p className="text-xs text-slate-400">hoạt động tuần này</p>
+              <p className="text-xs text-slate-400">tổng hoạt động</p>
             </div>
           </div>
 
-          <div className="flex gap-1 mb-3">
+          <div className="flex gap-1 mb-4">
             {RANGE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setRange(opt.value)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   range === opt.value
-                    ? "bg-indigo-500 text-white"
+                    ? "bg-indigo-500 text-white shadow-sm"
                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}
               >
@@ -185,13 +191,12 @@ const Dashboard = () => {
             ))}
           </div>
 
-          {/* Chart Recharts */}
-          {data?.dailyViews && data.dailyViews.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
+          {data?.chartData && data.chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
               <BarChart
-                data={data.dailyViews}
-                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-                barSize={32}
+                data={data.chartData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                barSize={range === "12m" ? 20 : 32} // Cân đối lại kích thước cột nếu hiện 12 tháng
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -199,10 +204,11 @@ const Dashboard = () => {
                   stroke="#F1F5F9"
                 />
                 <XAxis
-                  dataKey="day"
+                  dataKey="label"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: "#94A3B8", fontWeight: 500 }}
+                  dy={10}
                 />
                 <YAxis
                   allowDecimals={false}
@@ -214,33 +220,50 @@ const Dashboard = () => {
                   content={<CustomTooltip />}
                   cursor={{ fill: "#EEF2FF", radius: 6 }}
                 />
-                <Bar dataKey="luotNghe" fill="#6366F1" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="hoatDong" fill="#6366F1" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-slate-400 text-sm">
-              Chưa có dữ liệu hoạt động trong 7 ngày qua
+            <div className="h-[240px] flex items-center justify-center text-slate-400 text-sm">
+              Chưa có dữ liệu hoạt động trong {rangeLabelText}
             </div>
           )}
         </div>
 
         {/* TOP THỊNH HÀNH */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900 mb-1">
-            Top Thịnh hành
-          </h2>
-          <p className="text-sm text-slate-500 mb-6">
-            Sách được nghe nhiều nhất
-          </p>
-          <div className="space-y-5">
-            {data?.trendingBooks.map((book, index) => (
-              <div key={book._id} className="flex items-center gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-slate-900 mb-2">
+              Top Thịnh hành
+            </h2>
+            {/* 3 Nút Filter Top Thịnh Hành */}
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+              {TRENDING_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTrendingFilter(opt.value)}
+                  className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${
+                    trendingFilter === opt.value
+                      ? "bg-white text-indigo-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Danh sách 10 cuốn sách có Scrollbar */}
+          <div className="space-y-4 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar flex-1">
+            {data?.trendingBooks?.map((book, index) => (
+              <div key={book._id} className="flex items-center gap-3">
                 <div
-                  className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                  className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                     index === 0
                       ? "bg-amber-100 text-amber-600"
                       : index === 1
-                        ? "bg-slate-100 text-slate-600"
+                        ? "bg-slate-200 text-slate-600"
                         : index === 2
                           ? "bg-orange-100 text-orange-600"
                           : "bg-slate-50 text-slate-400"
@@ -249,22 +272,40 @@ const Dashboard = () => {
                   {index + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">
+                  <p
+                    className="text-sm font-semibold text-slate-900 truncate"
+                    title={book.title}
+                  >
                     {book.title}
                   </p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                    <span className="flex items-center">
-                      <PlayCircle className="h-3 w-3 mr-1" />
-                      {book.viewCount.toLocaleString()}
-                    </span>
+                    {/* Hiển thị Icon phù hợp với bộ lọc */}
+                    {trendingFilter === "listen" ? (
+                      <span className="flex items-center text-indigo-500">
+                        <Headphones className="h-3 w-3 mr-1" />
+                        {book.listenCount?.toLocaleString() || 0}
+                      </span>
+                    ) : (
+                      <span className="flex items-center text-blue-500">
+                        <PlayCircle className="h-3 w-3 mr-1" />
+                        {book.viewCount?.toLocaleString() || 0}
+                      </span>
+                    )}
+
                     <span className="flex items-center">
                       <Star className="h-3 w-3 mr-1 text-amber-400 fill-amber-400" />
-                      {book.rating}
+                      {book.rating || 0}
                     </span>
                   </div>
                 </div>
               </div>
             ))}
+
+            {(!data?.trendingBooks || data.trendingBooks.length === 0) && (
+              <div className="text-center text-slate-400 text-sm py-4">
+                Chưa có dữ liệu sách
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -275,7 +316,7 @@ const Dashboard = () => {
           Hoạt động mới nhất
         </h2>
         <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
-          {data?.recentActivities.map((activity) => (
+          {data?.recentActivities?.map((activity) => (
             <div
               key={activity.id}
               className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active py-3"
@@ -299,7 +340,7 @@ const Dashboard = () => {
                     {moment(activity.time).fromNow()}
                   </span>
                 </div>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 truncate">
                   {activity.action}{" "}
                   <span className="font-medium text-indigo-600">
                     {activity.target}
@@ -308,6 +349,12 @@ const Dashboard = () => {
               </div>
             </div>
           ))}
+
+          {(!data?.recentActivities || data.recentActivities.length === 0) && (
+            <div className="text-center text-slate-400 text-sm py-4">
+              Chưa có hoạt động nào gần đây
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -54,6 +54,7 @@ const BookDetailsPage = () => {
   // GỌI API LẤY CHI TIẾT SÁCH + CHƯƠNG + REVIEW KHI VỪA VÀO TRANG
   useEffect(() => {
     if (id) {
+      setPreviewChapter(null);
       fetchBookById(id);
       fetchChaptersByBook(id);
       fetchAdminReviews(); // Lấy cả đánh giá về
@@ -63,16 +64,11 @@ const BookDetailsPage = () => {
   // HÀM LẤY FULL NỘI DUNG CHỮ CỦA CHƯƠNG KHI BẤM XEM TRƯỚC
   const handleSelectPreview = async (chapterSummary: any) => {
     try {
-      // 1. Set tạm thông tin cơ bản trước để UI phản hồi ngay (Audio play được luôn)
       setPreviewChapter(chapterSummary);
-
-      // 2. Gọi API lấy chi tiết để có được trường `content` (chữ)
       const res: any = await axiosInstance.get(
         `/chapters/${chapterSummary._id}`,
       );
-      if (res.data) {
-        setPreviewChapter(res.data);
-      }
+      setPreviewChapter(res.data ?? res); // backend trả { message, data: chapter }
     } catch (error) {
       console.error("Lỗi khi tải nội dung chữ:", error);
     }
@@ -83,8 +79,7 @@ const BookDetailsPage = () => {
     if (chapters.length > 0 && !previewChapter) {
       handleSelectPreview(chapters[0]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chapters]);
+  }, [chapters, id]);
 
   // ==========================================
   // LOGIC XỬ LÝ CHƯƠNG
@@ -183,9 +178,9 @@ const BookDetailsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* HEADER: Nút Quay lại & Tiêu đề */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Button
           variant="outline"
           size="icon"
@@ -197,15 +192,12 @@ const BookDetailsPage = () => {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             {currentBook.title}
           </h1>
-          <p className="text-sm text-slate-500">
-            Quản lý chi tiết, chương và kiểm duyệt tương tác
-          </p>
         </div>
       </div>
 
       {/* TABS MENU */}
       <Tabs defaultValue="chapters" className="w-full">
-        <TabsList className="grid w-full max-w-4xl grid-cols-4 mb-6 bg-slate-100 p-1 rounded-lg">
+        <TabsList className="grid w-full max-w-4xl grid-cols-4 mb-3 bg-slate-100 p-1 rounded-lg">
           <TabsTrigger
             value="info"
             className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -226,7 +218,7 @@ const BookDetailsPage = () => {
           </TabsTrigger>
           <TabsTrigger
             value="preview"
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-indigo-600 font-medium flex items-center justify-center gap-2"
+            className="text-slate-600 data-[state=active]:text-slate-900 data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center gap-2"
           >
             <Headphones className="h-4 w-4" /> Nghe & Đọc thử
           </TabsTrigger>
@@ -317,7 +309,7 @@ const BookDetailsPage = () => {
                   <TableHead className="w-[80px] text-center">Chương</TableHead>
                   <TableHead>Tiêu đề</TableHead>
                   <TableHead className="text-center">Audio</TableHead>
-                  <TableHead className="text-center">Lượt nghe</TableHead>
+                  <TableHead className="text-center">Thời lượng</TableHead>
                   <TableHead className="text-right pr-6">Hành động</TableHead>
                 </TableRow>
               </TableHeader>
@@ -353,7 +345,9 @@ const BookDetailsPage = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-center text-slate-600">
-                        {chapter.views || 0}
+                        {chapter.duration
+                          ? `${Math.floor(chapter.duration / 60)}:${String(Math.round(chapter.duration % 60)).padStart(2, "0")}`
+                          : "—"}
                       </TableCell>
                       <TableCell className="text-right pr-4">
                         <div className="flex justify-end gap-2">

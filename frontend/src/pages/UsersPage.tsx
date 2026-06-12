@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -7,15 +7,14 @@ import {
   Edit,
   Trash2,
   Search,
-  Filter,
   Shield,
   User,
   Ban,
   CheckCircle2,
   Lock,
   Mail,
+  X,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,14 +48,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-
-// Import Store và Type
 import { useUserStore } from "@/stores/useUserStore";
 import type { User as UserType } from "@/types/user";
 
-// ==========================================
-// 1. SCHEMA CHO MODAL THÊM/SỬA USER
-// ==========================================
 const userSchema = z.object({
   name: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự" }),
   email: z.string().email({ message: "Email không hợp lệ" }),
@@ -66,14 +60,17 @@ const userSchema = z.object({
 
 type UserFormValues = z.infer<typeof userSchema>;
 
-// ==========================================
-// 2. COMPONENT CHÍNH
-// ==========================================
 const UsersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
 
-  // Lấy dữ liệu và action từ Store
+  // ── Filter state ──
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "user">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "banned">(
+    "all",
+  );
+
   const {
     users,
     isLoading,
@@ -84,10 +81,31 @@ const UsersPage = () => {
     toggleUserStatus,
   } = useUserStore();
 
-  // Load danh sách user khi vào trang
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Lọc client-side — users ít nên không cần server-side
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (users || []).filter((u) => {
+      const matchSearch =
+        !q ||
+        u.username?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q);
+      const matchRole = roleFilter === "all" || u.role === roleFilter;
+      const matchStatus = statusFilter === "all" || u.status === statusFilter;
+      return matchSearch && matchRole && matchStatus;
+    });
+  }, [users, search, roleFilter, statusFilter]);
+
+  const hasFilter = search || roleFilter !== "all" || statusFilter !== "all";
+
+  const clearFilters = () => {
+    setSearch("");
+    setRoleFilter("all");
+    setStatusFilter("all");
+  };
 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
@@ -105,28 +123,21 @@ const UsersPage = () => {
     } else {
       form.reset({ name: "", email: "", role: "user", password: "" });
     }
-  }, [selectedUser, form, isModalOpen]);
+  }, [selectedUser, isModalOpen]);
 
-  // Hành động mở Modal
   const handleAdd = () => {
     setSelectedUser(null);
     setIsModalOpen(true);
   };
-
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
     setIsModalOpen(true);
   };
 
-  // Submit Form (Thêm hoặc Sửa)
   const onSubmit = async (values: UserFormValues) => {
     try {
-      // Nếu đang sửa mà không nhập pass, ta xóa nó đi để khỏi bị backend cập nhật nhầm
       const submitData = { ...values };
-      if (selectedUser && !submitData.password) {
-        delete submitData.password;
-      }
-
+      if (selectedUser && !submitData.password) delete submitData.password;
       if (selectedUser) {
         await updateUser(selectedUser._id, submitData);
         toast.success("Cập nhật tài khoản thành công!");
@@ -142,48 +153,107 @@ const UsersPage = () => {
     }
   };
 
-  // Nút Khoá/Mở khoá
   const handleToggleStatus = async (user: UserType) => {
     try {
       await toggleUserStatus(user._id);
-      if (user.status === "active") {
-        toast.success(`Đã khoá tài khoản: ${user.username}`);
-      } else {
-        toast.success(`Đã mở khoá tài khoản: ${user.username}`);
-      }
-    } catch (error) {
+      toast.success(
+        user.status === "active"
+          ? `Đã khoá tài khoản: ${user.username}`
+          : `Đã mở khoá tài khoản: ${user.username}`,
+      );
+    } catch {
       toast.error("Lỗi khi thay đổi trạng thái!");
     }
   };
 
-  // Nút Xóa
   const handleDelete = async (user: UserType) => {
     if (
-      window.confirm(
-        `Bạn có chắc chắn muốn xóa tài khoản ${user.username} không? Hành động này không thể hoàn tác.`,
-      )
-    ) {
-      try {
-        await deleteUser(user._id);
-        toast.success("Đã xóa tài khoản thành công!");
-      } catch (error) {
-        toast.error("Lỗi khi xóa tài khoản!");
-      }
+      !window.confirm(`Bạn có chắc chắn muốn xóa tài khoản ${user.username}?`)
+    )
+      return;
+    try {
+      await deleteUser(user._id);
+      toast.success("Đã xóa tài khoản thành công!");
+    } catch {
+      toast.error("Lỗi khi xóa tài khoản!");
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Quản lý Người dùng
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Phân quyền, cấp tài khoản và xử lý vi phạm.
-          </p>
+    <div className="space-y-4">
+      {/* ── Toolbar ── */}
+      <div className="flex items-center gap-3">
+        {/* Search */}
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm theo tên, email..."
+            className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-lg
+                       text-slate-700 placeholder-slate-400 shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
+
+        {/* Filter: Role */}
+        <Select
+          value={roleFilter}
+          onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}
+        >
+          <SelectTrigger className="w-40 bg-white border-slate-200 text-sm shadow-sm">
+            <SelectValue placeholder="Tất cả vai trò" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả vai trò</SelectItem>
+            <SelectItem value="admin">Quản trị viên</SelectItem>
+            <SelectItem value="user">Độc giả</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Filter: Status */}
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+        >
+          <SelectTrigger className="w-40 bg-white border-slate-200 text-sm shadow-sm">
+            <SelectValue placeholder="Tất cả trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả trạng thái</SelectItem>
+            <SelectItem value="active">Đang hoạt động</SelectItem>
+            <SelectItem value="banned">Đã khoá</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Xoá bộ lọc */}
+        {hasFilter && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700
+                       border border-slate-200 bg-white rounded-lg px-3 py-2 shadow-sm transition-colors"
+          >
+            <X className="h-3 w-3" /> Xoá bộ lọc
+          </button>
+        )}
+
+        {/* Counter */}
+        {!isLoading && (
+          <span className="text-xs text-slate-400 whitespace-nowrap">
+            {filtered.length} / {(users || []).length} người dùng
+          </span>
+        )}
+
+        <div className="flex-1" />
+
         <Button
           className="bg-indigo-600 hover:bg-indigo-700"
           onClick={handleAdd}
@@ -192,16 +262,16 @@ const UsersPage = () => {
         </Button>
       </div>
 
-      {/* BẢNG DỮ LIỆU */}
-      <div className="rounded-md border bg-white shadow-sm overflow-hidden">
+      {/* ── Table ── */}
+      <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead className="w-[250px]">Người dùng</TableHead>
-              <TableHead>Vai trò (Role)</TableHead>
+              <TableHead>Vai trò</TableHead>
               <TableHead>Ngày tham gia</TableHead>
               <TableHead className="text-center">Trạng thái</TableHead>
-              <TableHead className="text-right pr-6 w-[180px]">
+              <TableHead className="text-right pr-6 w-[150px]">
                 Hành động
               </TableHead>
             </TableRow>
@@ -209,18 +279,39 @@ const UsersPage = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-10 text-slate-500"
+                >
                   Đang tải dữ liệu...
                 </TableCell>
               </TableRow>
-            ) : !users || users.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
-                  Chưa có người dùng nào.
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-10 text-slate-500"
+                >
+                  <div className="flex flex-col items-center">
+                    <User className="h-10 w-10 text-slate-300 mb-2" />
+                    <p className="text-sm">
+                      {hasFilter
+                        ? "Không tìm thấy người dùng phù hợp."
+                        : "Chưa có người dùng nào."}
+                    </p>
+                    {hasFilter && (
+                      <button
+                        onClick={clearFilters}
+                        className="mt-1 text-xs text-indigo-500 hover:underline"
+                      >
+                        Xoá bộ lọc
+                      </button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
-              (users || []).map((user) => (
+              filtered.map((user) => (
                 <TableRow
                   key={user._id}
                   className={`hover:bg-slate-50 transition-colors ${user.status === "banned" ? "bg-red-50/40 opacity-80" : ""}`}
@@ -228,21 +319,23 @@ const UsersPage = () => {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 uppercase border ${user.role === "admin" ? "bg-indigo-100 text-indigo-700 border-indigo-200" : "bg-slate-100 text-slate-700 border-slate-200"}`}
+                        className={`h-9 w-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 uppercase border
+                        ${user.role === "admin" ? "bg-indigo-100 text-indigo-700 border-indigo-200" : "bg-slate-100 text-slate-700 border-slate-200"}`}
                       >
                         {(user.username || user.email || "?").charAt(0)}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-semibold text-slate-900">
-                          {user.username || "Chưa cập nhập"}
+                          {user.username || "Chưa cập nhật"}
                         </span>
                         <span className="text-xs text-slate-500 flex items-center mt-0.5">
-                          <Mail className="h-3 w-3 mr-1" />{" "}
+                          <Mail className="h-3 w-3 mr-1" />
                           {user.email || "Chưa có email"}
                         </span>
                       </div>
                     </div>
                   </TableCell>
+
                   <TableCell>
                     {user.role === "admin" ? (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
@@ -254,9 +347,11 @@ const UsersPage = () => {
                       </span>
                     )}
                   </TableCell>
+
                   <TableCell className="text-slate-500 text-sm">
                     {new Date(user.createdAt).toLocaleDateString("vi-VN")}
                   </TableCell>
+
                   <TableCell className="text-center">
                     {user.status === "active" ? (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 border border-emerald-200">
@@ -268,6 +363,7 @@ const UsersPage = () => {
                       </span>
                     )}
                   </TableCell>
+
                   <TableCell className="text-right pr-4">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -281,7 +377,11 @@ const UsersPage = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        className={`h-8 w-8 ${user.status === "active" ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"}`}
+                        className={`h-8 w-8 ${
+                          user.status === "active"
+                            ? "text-amber-600 hover:bg-amber-50 border-amber-200"
+                            : "text-emerald-600 hover:bg-emerald-50 border-emerald-200"
+                        }`}
                         title={
                           user.status === "active"
                             ? "Khoá tài khoản"
@@ -299,7 +399,6 @@ const UsersPage = () => {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                        title="Xoá vĩnh viễn"
                         onClick={() => handleDelete(user)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -313,7 +412,7 @@ const UsersPage = () => {
         </Table>
       </div>
 
-      {/* MODAL THÊM/SỬA TÀI KHOẢN */}
+      {/* ── Modal ── */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -380,7 +479,6 @@ const UsersPage = () => {
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
                         value={field.value}
                       >
                         <FormControl>

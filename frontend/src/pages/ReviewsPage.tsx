@@ -6,7 +6,8 @@ import {
   Trash2,
   Search,
   MessageSquareWarning,
-  Eye, // <-- Thêm Icon này
+  Eye,
+  X, // <-- Thêm Icon này
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,13 @@ import {
 } from "@/components/ui/dialog"; // <-- Import Dialog của shadcn
 import { useReviewStore } from "@/stores/useReviewStore";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ReviewsPage = () => {
   const {
@@ -109,62 +117,49 @@ const ReviewsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* ... (Phần Header và Bộ lọc giữ nguyên) ... */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Quản lý Đánh giá
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Kiểm duyệt toàn bộ đánh giá của độc giả trên toàn hệ thống.
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-4">
       {/* THANH CÔNG CỤ TÌM KIẾM & LỌC */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white p-4 rounded-lg border shadow-sm gap-4">
-        <div className="relative w-full max-w-md">
+      <div className="flex items-center justify-between gap-3 ">
+        {/* Search */}
+        <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Tìm theo tên người dùng hoặc nội dung..."
-            className="pl-9 w-full bg-slate-50 border-slate-200"
+          <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Tìm theo tên người dùng hoặc nội dung..."
+            className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-lg
+                 text-slate-700 placeholder-slate-400 shadow-sm
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <select
-            className="h-10 px-3 py-2 text-sm rounded-md border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-            value={starFilter}
-            onChange={(e) =>
-              setStarFilter(
-                e.target.value === "all" ? "all" : Number(e.target.value),
-              )
-            }
-          >
-            <option value="all">Tất cả số sao</option>
-            <option value="5">5 Sao (Tuyệt vời)</option>
-            <option value="4">4 Sao (Khá tốt)</option>
-            <option value="3">3 Sao (Bình thường)</option>
-            <option value="2">2 Sao (Tệ)</option>
-            <option value="1">1 Sao (Rất tệ)</option>
-          </select>
-
-          <Button
-            variant="outline"
-            onClick={() => setNeedsReviewOnly(!needsReviewOnly)}
-            className={`transition-colors ${
-              needsReviewOnly
-                ? "text-rose-700 border-rose-300 bg-rose-100 hover:bg-rose-200 hover:text-rose-800"
-                : "text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100"
-            }`}
-          >
-            <MessageSquareWarning className="h-4 w-4 mr-2" />
-            {needsReviewOnly ? "Đang lọc Cần kiểm duyệt" : "Cần kiểm duyệt"}
-          </Button>
-        </div>
+        {/* Filter sao */}
+        <Select
+          value={String(starFilter)}
+          onValueChange={(val) =>
+            setStarFilter(val === "all" ? "all" : Number(val))
+          }
+        >
+          <SelectTrigger className="w-44 bg-white border-slate-200 text-sm shadow-sm">
+            <SelectValue placeholder="Tất cả số sao" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả số sao</SelectItem>
+            <SelectItem value="5">5 Sao (Tuyệt vời)</SelectItem>
+            <SelectItem value="4">4 Sao (Khá tốt)</SelectItem>
+            <SelectItem value="3">3 Sao (Bình thường)</SelectItem>
+            <SelectItem value="2">2 Sao (Tệ)</SelectItem>
+            <SelectItem value="1">1 Sao (Rất tệ)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* BẢNG DỮ LIỆU ĐÁNH GIÁ */}

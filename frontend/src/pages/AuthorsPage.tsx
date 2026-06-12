@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, PenTool, Loader2, Eye } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  PenTool,
+  Loader2,
+  Eye,
+  Search,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -11,35 +20,40 @@ import {
 } from "@/components/ui/table";
 import AuthorModal from "../components/AuthorModal";
 import { toast } from "sonner";
-
-// IMPORT KHO DỮ LIỆU TÁC GIẢ
-import { useAuthorStore } from "@/stores/useAuthorStore"; // Sửa lại đường dẫn nếu cần
+import { useAuthorStore } from "@/stores/useAuthorStore";
 import { useNavigate } from "react-router";
 
 const AuthorsPage = () => {
-  // Bốc dữ liệu và hàm từ Store
   const { authors, isLoading, fetchAuthors, deleteAuthor } = useAuthorStore();
   const navigate = useNavigate();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<any>(null);
+  const [search, setSearch] = useState("");
 
-  // Tự động load dữ liệu khi vào trang
   useEffect(() => {
     fetchAuthors();
   }, [fetchAuthors]);
+
+  // Lọc realtime theo tên hoặc tiểu sử
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return authors;
+    return authors.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        (a.bio ?? "").toLowerCase().includes(q),
+    );
+  }, [authors, search]);
 
   const handleAdd = () => {
     setSelectedAuthor(null);
     setIsModalOpen(true);
   };
-
   const handleEdit = (author: any) => {
     setSelectedAuthor(author);
     setIsModalOpen(true);
   };
-
-  // Hàm gọi API Xóa
   const handleDelete = async (id: string) => {
     if (!window.confirm("Bạn có chắc chắn muốn xoá tác giả này không?")) return;
     try {
@@ -51,16 +65,38 @@ const AuthorsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Quản lý Tác giả
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Quản lý thông tin và hình ảnh các tác giả truyện.
-          </p>
+    <div className="space-y-4">
+      {/* ── Toolbar ── */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm theo tên, tiểu sử..."
+            className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-lg
+                       text-slate-700 placeholder-slate-400
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                       transition-all shadow-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
+
+        {search && !isLoading && (
+          <span className="text-xs text-slate-500 whitespace-nowrap">
+            {filtered.length} / {authors.length} tác giả
+          </span>
+        )}
+
+        <div className="flex-1" />
+
         <Button
           className="bg-indigo-600 hover:bg-indigo-700"
           onClick={handleAdd}
@@ -69,7 +105,8 @@ const AuthorsPage = () => {
         </Button>
       </div>
 
-      <div className="rounded-md border bg-white shadow-sm overflow-hidden">
+      {/* ── Table ── */}
+      <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
@@ -81,7 +118,6 @@ const AuthorsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* ĐANG LOAD */}
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center h-32">
@@ -91,8 +127,7 @@ const AuthorsPage = () => {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : /* TRỐNG DỮ LIỆU */
-            authors.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={5}
@@ -100,22 +135,32 @@ const AuthorsPage = () => {
                 >
                   <div className="flex flex-col items-center justify-center">
                     <PenTool className="h-10 w-10 text-slate-300 mb-2" />
-                    <p>Chưa có tác giả nào.</p>
+                    <p className="text-sm">
+                      {search
+                        ? `Không tìm thấy kết quả cho "${search}"`
+                        : "Chưa có tác giả nào."}
+                    </p>
+                    {search && (
+                      <button
+                        onClick={() => setSearch("")}
+                        className="mt-1 text-xs text-indigo-500 hover:underline"
+                      >
+                        Xoá bộ lọc
+                      </button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              /* CÓ DỮ LIỆU THẬT */
-              authors.map((author, index) => (
+              filtered.map((author, index) => (
                 <TableRow key={author._id} className="hover:bg-slate-50">
                   <TableCell className="text-center font-medium text-slate-500">
                     {index + 1}
                   </TableCell>
 
-                  {/* Cột hiển thị Ảnh + Tên tác giả */}
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
+                      <div className="h-9 w-9 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
                         {author.avatarUrl ? (
                           <img
                             src={author.avatarUrl}
@@ -137,11 +182,13 @@ const AuthorsPage = () => {
                   <TableCell className="text-slate-600 truncate max-w-[300px]">
                     {author.bio || "—"}
                   </TableCell>
+
                   <TableCell className="text-center">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                       {author.bookCount || 0} sách
                     </span>
                   </TableCell>
+
                   <TableCell className="text-right pr-4">
                     <div className="flex justify-end gap-2">
                       <Button

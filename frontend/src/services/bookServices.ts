@@ -2,28 +2,35 @@
 import axiosInstance from "@/lib/axios";
 import type { Book } from "@/types/book";
 
+export interface BookParams {
+  search?: string;
+  category?: string;
+  sort?: "newest" | "top-view" | "top-listen" | "rating";
+  page?: number;
+  limit?: number;
+}
+
+export interface BookResponse {
+  data: Book[];
+  total: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export const bookService = {
-  // Lấy danh sách sách
-  getAll: async (): Promise<Book[]> => {
-    const res = await axiosInstance.get<any, { data: Book[]; total: number }>(
-      "/books",
-    );
-    return res.data; // Unwrap đúng chỗ
+  // interceptor đã unwrap → res chính là { data, total, page, totalPages, hasMore }
+  getAll: async (params?: BookParams): Promise<BookResponse> => {
+    const res = await axiosInstance.get("/books", { params });
+    return res as unknown as BookResponse;
   },
 
+  // interceptor đã unwrap → res chính là Book object
   getById: async (id: string): Promise<Book> => {
-    // Ép kiểu về any để TypeScript không báo lỗi khi ta bóc vỏ JSON
-    const response: any = await axiosInstance.get(`/books/${id}`);
-
-    // Bóc tách cẩn thận:
-    // - response.data.data (Nếu dùng axios mặc định)
-    // - response.data (Nếu axiosInstance đã có sẵn interceptor)
-    const bookData = response.data?.data || response.data || response;
-
-    return bookData;
+    const res: any = await axiosInstance.get(`/books/${id}`);
+    return res.data; // ✅ res = { message, data: book } → lấy res.data
   },
 
-  // Thêm sách mới (Dùng FormData vì có up ảnh)
   create: async (
     formData: FormData,
   ): Promise<{ message: string; book: Book }> => {
@@ -35,7 +42,6 @@ export const bookService = {
     return data;
   },
 
-  // Cập nhật sách
   update: async (
     id: string,
     formData: FormData,
@@ -48,7 +54,6 @@ export const bookService = {
     return data;
   },
 
-  // Xoá sách
   delete: async (id: string): Promise<{ message: string }> => {
     const data = await axiosInstance.delete<any, { message: string }>(
       `/books/${id}`,

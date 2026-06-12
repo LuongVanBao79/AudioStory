@@ -1,5 +1,14 @@
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, FolderTree, Loader2, Eye } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  FolderTree,
+  Loader2,
+  Eye,
+  Search,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,42 +19,45 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import CategoryModal from "../components/CategoryModal";
-import { useCategoryStore } from "@/stores/useCategoryStore"; // Nhớ check lại tên file store cho chuẩn nhé
-import { toast } from "sonner"; // Dùng để hiển thị thông báo góc màn hình
+import { useCategoryStore } from "@/stores/useCategoryStore";
+import { toast } from "sonner";
 import { useNavigate } from "react-router";
 
 const CategoriesPage = () => {
-  // Lấy toàn bộ "vũ khí" từ Store ra
   const { categories, isLoading, fetchCategories, deleteCategory } =
     useCategoryStore();
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
-  // Gọi API lấy dữ liệu ngay khi vừa vào trang
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Mở modal Thêm mới
+  // Lọc realtime theo tên hoặc slug
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return categories;
+    return categories.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.slug.toLowerCase().includes(q) ||
+        (c.description ?? "").toLowerCase().includes(q),
+    );
+  }, [categories, search]);
+
   const handleAdd = () => {
     setSelectedCategory(null);
     setIsModalOpen(true);
   };
-
-  // Mở modal Sửa
   const handleEdit = (category: any) => {
     setSelectedCategory(category);
     setIsModalOpen(true);
   };
-
-  const navigate = useNavigate();
-
-  // Hàm xử lý Xoá
   const handleDelete = async (id: string) => {
     if (!window.confirm("Bạn có chắc chắn muốn xoá danh mục này không?"))
       return;
-
     try {
       await deleteCategory(id);
       toast.success("Xoá danh mục thành công!");
@@ -55,16 +67,40 @@ const CategoriesPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Quản lý Danh mục
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Thiết lập các thể loại truyện để phân loại kho sách.
-          </p>
+    <div className="space-y-4">
+      {/* ── Toolbar: Search + Add ── */}
+      <div className="flex items-center gap-3">
+        {/* Search */}
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm theo tên, slug, mô tả..."
+            className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-lg
+                       text-slate-700 placeholder-slate-400
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                       transition-all shadow-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
+
+        {/* Số kết quả — chỉ hiện khi đang search */}
+        {search && !isLoading && (
+          <span className="text-xs text-slate-500 whitespace-nowrap">
+            {filtered.length} / {categories.length} danh mục
+          </span>
+        )}
+
+        <div className="flex-1" />
+
         <Button
           className="bg-indigo-600 hover:bg-indigo-700"
           onClick={handleAdd}
@@ -73,7 +109,8 @@ const CategoriesPage = () => {
         </Button>
       </div>
 
-      <div className="rounded-md border bg-white shadow-sm overflow-hidden">
+      {/* ── Table ── */}
+      <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
@@ -86,7 +123,6 @@ const CategoriesPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* TRẠNG THÁI 1: ĐANG LOAD DỮ LIỆU */}
             {isLoading ? (
               <TableRow>
                 <TableCell
@@ -99,8 +135,7 @@ const CategoriesPage = () => {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : /* TRẠNG THÁI 2: KHÔNG CÓ DỮ LIỆU */
-            categories.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={6}
@@ -108,13 +143,24 @@ const CategoriesPage = () => {
                 >
                   <div className="flex flex-col items-center justify-center">
                     <FolderTree className="h-10 w-10 text-slate-300 mb-2" />
-                    <p>Chưa có danh mục nào.</p>
+                    <p className="text-sm">
+                      {search
+                        ? `Không tìm thấy kết quả cho "${search}"`
+                        : "Chưa có danh mục nào."}
+                    </p>
+                    {search && (
+                      <button
+                        onClick={() => setSearch("")}
+                        className="mt-1 text-xs text-indigo-500 hover:underline"
+                      >
+                        Xoá bộ lọc
+                      </button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              /* TRẠNG THÁI 3: CÓ DỮ LIỆU THẬT */
-              categories.map((cat, index) => (
+              filtered.map((cat, index) => (
                 <TableRow key={cat._id} className="hover:bg-slate-50">
                   <TableCell className="text-center font-medium text-slate-500">
                     {index + 1}
@@ -122,8 +168,8 @@ const CategoriesPage = () => {
                   <TableCell className="font-semibold text-slate-900">
                     {cat.name}
                   </TableCell>
-                  <TableCell className="text-slate-500">
-                    <span className="bg-slate-100 px-2 py-1 rounded text-xs font-mono">
+                  <TableCell>
+                    <span className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-500">
                       {cat.slug}
                     </span>
                   </TableCell>
@@ -157,7 +203,7 @@ const CategoriesPage = () => {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDelete(cat._id)} // Gọi API Xoá ở đây
+                        onClick={() => handleDelete(cat._id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

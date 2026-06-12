@@ -2,19 +2,31 @@
 
 export interface Chapter {
   _id: string;
-  book: string; // Chứa ID của cuốn sách
+  book: string;
   chapterNumber: number;
   title: string;
   content: string;
-  audioUrl?: string; // Link file mp3 trả về từ Cloudinary
+  audioUrl?: string;
   audioPublicId?: string;
+  duration?: number;
+  isUnlocked?: boolean;
   hasAudio: boolean;
   views: number;
+  listenCount?: number;
+  prevChapter?: {
+    _id: string;
+    chapterNumber: number;
+    title: string;
+  } | null;
+  nextChapter?: {
+    _id: string;
+    chapterNumber: number;
+    title: string;
+  } | null;
   createdAt?: string;
   updatedAt?: string;
 }
 
-// Type dùng khi gửi form tạo/sửa chương
 export interface ChapterFormData {
   book: string;
   title: string;

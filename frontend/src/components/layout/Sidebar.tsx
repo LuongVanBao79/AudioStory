@@ -1,4 +1,3 @@
-import React from "react";
 import { NavLink } from "react-router";
 import {
   LayoutDashboard,
@@ -43,8 +42,6 @@ const Sidebar = () => {
   ];
 
   return (
-    // FIX 1: w-64 → w-full  (AdminLayout's wrapper controls the width)
-    // FIX 2: h-screen → h-full  (fill the flex parent, not the whole viewport)
     <div className="w-full h-full bg-slate-900 text-slate-300 flex flex-col">
       {/* Logo
           FIX 3: h-16 → h-14  (match AdminLayout header height so top bar aligns) */}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useNavigate, useLocation } from "react-router";
 import Sidebar from "./Sidebar";
 import { useAuthStore } from "@/stores/useAuthStore";
 import {
@@ -18,6 +18,16 @@ import {
 import { useNotificationStore } from "../../stores/useNotificationStore";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Dashboard",
+  "/categories": "Danh mục",
+  "/authors": "Tác giả",
+  "/books": "Sách & Chương",
+  "/reviews": "Đánh giá",
+  "/comments": "Bình luận",
+  "/users": "Người dùng",
+};
 
 // ── Helper: Icon theo loại thông báo ──────────────────────────
 const NotifIcon = ({ type }: { type: string }) => {
@@ -44,6 +54,7 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const location = useLocation();
 
   const { notifications, unreadCount, init, markAsRead, markAllAsRead } =
     useNotificationStore();
@@ -57,6 +68,11 @@ const AdminLayout = () => {
     else if (notif.type === "new_comment") navigate("/comments");
     else if (notif.type === "reported") navigate("/comments?filter=reported");
   };
+
+  const pageTitle =
+    PAGE_TITLES[location.pathname] ??
+    PAGE_TITLES["/" + location.pathname.split("/")[1]] ??
+    "Admin";
 
   // Khởi tạo SSE khi admin mở web, cleanup khi unmount
   useEffect(() => {
@@ -96,6 +112,14 @@ const AdminLayout = () => {
               <PanelLeftOpen className="h-5 w-5" />
             )}
           </button>
+
+          {/* ── Page title ── */}
+          <h1 className="text-sm font-semibold text-slate-700 hidden sm:block">
+            {pageTitle}
+          </h1>
+
+          {/* Divider mỏng giữa title và search */}
+          <div className="w-px h-4 bg-slate-200 hidden sm:block" />
 
           {/* Search bar */}
           <div className="relative w-64">
@@ -299,7 +323,7 @@ const AdminLayout = () => {
         </header>
 
         {/* ── Page content ── */}
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto px-6 py-4">
           <Outlet />
         </main>
       </div>

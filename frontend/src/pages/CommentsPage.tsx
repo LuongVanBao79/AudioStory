@@ -35,6 +35,13 @@ import {
 import { toast } from "sonner";
 import type { CommentItem } from "@/types/comment";
 import { useCommentStore } from "@/stores/useCommentStore";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const CommentsPage = () => {
   const {
@@ -135,53 +142,59 @@ const CommentsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* TIÊU ĐỀ */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Quản lý Bình luận
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Theo dõi, kiểm duyệt và quản lý bình luận của độc giả.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {/* THANH CÔNG CỤ */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-4 rounded-lg border shadow-sm gap-4">
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Tìm theo nội dung, user hoặc tên sách..."
-            className="pl-9 w-full bg-slate-50 border-slate-200"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        {/* Trái: Search + Select */}
+        <div className="flex items-center gap-3">
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm theo nội dung, user hoặc tên sách..."
+              className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-lg
+                   text-slate-700 placeholder-slate-400 shadow-sm
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            className="h-10 px-3 py-2 text-sm rounded-md border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+          <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onValueChange={(val) => setStatusFilter(val as typeof statusFilter)}
           >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="visible">Đang hiển thị</option>
-            <option value="hidden">Đã bị ẩn</option>
-          </select>
-
-          <Button
-            variant="outline"
-            onClick={() => setReportedOnly(!reportedOnly)}
-            className={`transition-colors ${
-              reportedOnly
-                ? "text-red-700 border-red-300 bg-red-100 hover:bg-red-200 hover:text-red-800"
-                : "text-red-600 border-red-200 bg-red-50 hover:bg-red-100"
-            }`}
-          >
-            <ShieldAlert className="h-4 w-4 mr-2" />
-            {reportedOnly ? "Đang lọc Cảnh báo" : "Bị báo cáo"}
-          </Button>
+            <SelectTrigger className="w-44 bg-white border-slate-200 text-sm shadow-sm">
+              <SelectValue placeholder="Tất cả trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="visible">Đang hiển thị</SelectItem>
+              <SelectItem value="hidden">Đã bị ẩn</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Phải: Button báo cáo */}
+        <Button
+          variant="outline"
+          onClick={() => setReportedOnly(!reportedOnly)}
+          className={`transition-colors ${
+            reportedOnly
+              ? "text-red-700 border-red-300 bg-red-100 hover:bg-red-200 hover:text-red-800"
+              : "text-red-600 border-red-200 bg-red-50 hover:bg-red-100"
+          }`}
+        >
+          <ShieldAlert className="h-4 w-4 mr-2" />
+          {reportedOnly ? "Đang lọc Cảnh báo" : "Bị báo cáo"}
+        </Button>
       </div>
 
       {/* BẢNG BÌNH LUẬN */}
