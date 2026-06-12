@@ -287,6 +287,37 @@ const userController = {
       res.status(500).json({ message: "Lỗi khi lấy thống kê!" });
     }
   },
+
+  updateAvatar: async (req, res) => {
+    try {
+      // Middleware uploadCloud đã tự động đẩy ảnh lên Cloudinary
+      // và gán thông tin URL trả về vào req.file.path
+      if (!req.file) {
+        return res.status(400).json({ message: "Vui lòng đính kèm ảnh!" });
+      }
+
+      const avatarUrl = req.file.path;
+
+      // Cập nhật URL ảnh mới vào Database
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: { avatar: avatarUrl } },
+        { new: true },
+      ).select("-password -refreshToken");
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Không tìm thấy người dùng!" });
+      }
+
+      res.status(200).json({
+        message: "Cập nhật ảnh đại diện thành công!",
+        data: updatedUser,
+      });
+    } catch (error) {
+      console.error("Lỗi cập nhật avatar:", error);
+      res.status(500).json({ message: "Lỗi hệ thống khi cập nhật ảnh!" });
+    }
+  },
 };
 
 module.exports = userController;

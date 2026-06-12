@@ -13,21 +13,20 @@ const toLocalDateStr = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-// ── 7 ngày: group theo ngày ──────────────────────────────────────
-const buildLast7Days = (commentCounts, reviewCounts) => {
+// ── 7 ngày: group theo ngày trong tuần ───────────────────────────
+const buildLast7Days = (activityCounts) => {
   const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
   return Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
     const dateStr = toLocalDateStr(date);
-    const comments = commentCounts.find((c) => c._id === dateStr)?.count || 0;
-    const reviews = reviewCounts.find((r) => r._id === dateStr)?.count || 0;
-    return { day: days[date.getDay()], luotNghe: comments + reviews };
+    const count = activityCounts.find((c) => c._id === dateStr)?.count || 0;
+    return { label: days[date.getDay()], date: dateStr, hoatDong: count };
   });
 };
 
-// ── 4 tuần: group theo tuần ──────────────────────────────────────
-const buildLast4Weeks = (commentCounts, reviewCounts) => {
+// ── 4 tuần: group theo tuần trong tháng ───────────────────────────
+const buildLast4Weeks = (activityCounts) => {
   return Array.from({ length: 4 }, (_, i) => {
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - (3 - i) * 7 - weekStart.getDay());
@@ -39,46 +38,51 @@ const buildLast4Weeks = (commentCounts, reviewCounts) => {
     const startStr = toLocalDateStr(weekStart);
     const endStr = toLocalDateStr(weekEnd);
 
-    // Cộng tất cả ngày trong tuần đó
-    const comments = commentCounts
+    const count = activityCounts
       .filter((c) => c._id >= startStr && c._id <= endStr)
       .reduce((sum, c) => sum + c.count, 0);
-    const reviews = reviewCounts
-      .filter((r) => r._id >= startStr && r._id <= endStr)
-      .reduce((sum, r) => sum + r.count, 0);
 
-    return { day: `Tuần ${i + 1}`, luotNghe: comments + reviews };
+    return { label: `Tuần ${i + 1}`, hoatDong: count };
   });
 };
 
-// ── 12 tháng: group theo tháng ───────────────────────────────────
-const buildLast12Months = (commentCounts, reviewCounts) => {
+// ── 12 tháng: group theo tháng trong năm ──────────────────────────
+const buildLast12Months = (activityCounts) => {
   return Array.from({ length: 12 }, (_, i) => {
     const date = new Date();
     date.setMonth(date.getMonth() - (11 - i), 1);
     const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
-    const comments = commentCounts.find((c) => c._id === monthStr)?.count || 0;
-    const reviews = reviewCounts.find((r) => r._id === monthStr)?.count || 0;
+    const count = activityCounts.find((c) => c._id === monthStr)?.count || 0;
 
-    return { day: `Th${date.getMonth() + 1}`, luotNghe: comments + reviews };
+    return { label: `Th${date.getMonth() + 1}`, hoatDong: count };
   });
 };
 
 exports.getDashboardData = async (req, res) => {
   try {
+    // Nhận params từ Frontend
     const range = req.query.range || "7d"; // "7d" | "4w" | "12m"
+    const trendingFilter = req.query.trendingFilter || "read"; // "read" | "listen" | "rating"
 
-    // Tính mốc thời gian bắt đầu theo range
+    // 1. Xử lý Logic thời gian cho biểu đồ hoạt động
     const since = new Date();
     since.setHours(0, 0, 0, 0);
     if (range === "7d") since.setDate(since.getDate() - 6);
     else if (range === "4w") since.setDate(since.getDate() - 27);
     else if (range === "12m") since.setMonth(since.getMonth() - 11);
 
-    // Format group: ngày hoặc tháng
     const groupFormat = range === "12m" ? "%Y-%m" : "%Y-%m-%d";
 
+    // 2. Xử lý Logic sắp xếp cho Top thịnh hành
+    let trendingSort = { viewCount: -1 }; // Mặc định: Đọc nhiều
+    if (trendingFilter === "listen") {
+      trendingSort = { listenCount: -1 }; // Nghe nhiều (Lưu ý: Model Book cần có field listenCount)
+    } else if (trendingFilter === "rating") {
+      trendingSort = { rating: -1, viewCount: -1 }; // Đánh giá cao (nếu rating bằng nhau thì ưu tiên view)
+    }
+
+    // 3. Chạy Promise.all để tối ưu hiệu năng
     const [
       totalBooks,
       totalUsers,
@@ -96,18 +100,21 @@ exports.getDashboardData = async (req, res) => {
       Book.aggregate([
         { $group: { _id: null, total: { $sum: "$viewCount" } } },
       ]),
+
+      // Top 10 thịnh hành với điều kiện sort động
       Book.find()
-        .sort({ viewCount: -1 })
-        .limit(4)
-        .select("title viewCount rating"),
+        .sort(trendingSort)
+        .limit(10) // Thay đổi từ 4 lên 10
+        .select("title viewCount listenCount rating"), // Lấy thêm listenCount trả về UI
+
       Comment.find()
         .sort({ createdAt: -1 })
-        .limit(2)
+        .limit(5)
         .populate("user", "username")
         .populate("book", "title"),
       Review.find()
         .sort({ createdAt: -1 })
-        .limit(2)
+        .limit(5)
         .populate("user", "username")
         .populate("book", "title"),
 
@@ -146,14 +153,22 @@ exports.getDashboardData = async (req, res) => {
 
     const totalViews = totalViewsObj[0]?.total || 0;
 
-    // Chọn builder theo range
-    let dailyViews;
-    if (range === "7d")
-      dailyViews = buildLast7Days(dailyCommentCounts, dailyReviewCounts);
-    else if (range === "4w")
-      dailyViews = buildLast4Weeks(dailyCommentCounts, dailyReviewCounts);
-    else dailyViews = buildLast12Months(dailyCommentCounts, dailyReviewCounts);
+    // 4. Gộp data hoạt động (Comments + Reviews)
+    // Để code helper gọn hơn, ta gộp tổng hoạt động theo ngày/tháng trước khi đưa vào helper
+    const mergedActivities = [...dailyCommentCounts];
+    dailyReviewCounts.forEach((review) => {
+      const existing = mergedActivities.find((a) => a._id === review._id);
+      if (existing) existing.count += review.count;
+      else mergedActivities.push(review);
+    });
 
+    // Chọn builder theo range
+    let chartData;
+    if (range === "7d") chartData = buildLast7Days(mergedActivities);
+    else if (range === "4w") chartData = buildLast4Weeks(mergedActivities);
+    else chartData = buildLast12Months(mergedActivities);
+
+    // 5. Chuẩn bị danh sách hoạt động gần đây
     const activities = [
       ...recentComments.map((c) => ({
         id: `cmt_${c._id}`,
@@ -171,13 +186,16 @@ exports.getDashboardData = async (req, res) => {
         time: r.createdAt,
         type: "review",
       })),
-    ].sort((a, b) => new Date(b.time) - new Date(a.time));
+    ]
+      .sort((a, b) => new Date(b.time) - new Date(a.time))
+      .slice(0, 10); // Lấy 10 hoạt động mới nhất
 
+    // 6. Trả về kết quả
     res.status(200).json({
       stats: { totalBooks, totalUsers, totalViews, reportedCommentsCount },
       trendingBooks: trendingBooksData,
       recentActivities: activities,
-      dailyViews,
+      chartData, // Đã đổi tên từ dailyViews thành chartData cho đúng nghĩa
     });
   } catch (error) {
     res.status(500).json({ message: "Lỗi server", error: error.message });

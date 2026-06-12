@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["user", "admin"], default: "user" },
-    status: { type: String, enum: ["active", "banned"], default: "active" }, // BỔ SUNG: Trạng thái khoá nick
+    status: { type: String, enum: ["active", "banned"], default: "active" },
     points: { type: Number, default: 0 },
     avatar: { type: String, default: "" },
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Book" }],

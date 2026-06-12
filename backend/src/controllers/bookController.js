@@ -1,5 +1,6 @@
 const Book = require("../models/Book");
 const Chapter = require("../models/Chapter");
+const Author = require("../models/Author");
 const { cloudinary } = require("../config/cloudinary");
 
 const bookController = {
@@ -22,8 +23,21 @@ const bookController = {
       const filter = {};
 
       if (search) {
-        filter.title = { $regex: search, $options: "i" }; // Không phân biệt hoa thường
+        // 1. Tìm tất cả các tác giả có tên khớp với từ khóa search
+        const matchedAuthors = await Author.find({
+          name: { $regex: search, $options: "i" },
+        }).select("_id");
+
+        // Trích xuất ra một mảng chỉ chứa các ID của tác giả
+        const authorIds = matchedAuthors.map((author) => author._id);
+
+        // 2. Tìm sách có title khớp HOẶC tác giả thuộc danh sách authorIds
+        filter.$or = [
+          { title: { $regex: search, $options: "i" } },
+          { author: { $in: authorIds } },
+        ];
       }
+
       if (category) {
         filter.category = category; // Truyền ObjectId hoặc slug đều được
       }
@@ -57,6 +71,7 @@ const bookController = {
         hasMore: skip + books.length < total,
       });
     } catch (error) {
+      console.error(error); // Thêm log để dễ debug nếu có lỗi
       res.status(500).json({ message: "Lỗi khi lấy danh sách sách!" });
     }
   },
